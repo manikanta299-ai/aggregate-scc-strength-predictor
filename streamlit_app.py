@@ -90,10 +90,6 @@ with col8:
 
 # Encode material
 material_code = material_reverse[material]
-
-st.write("INPUT VALUES FROM GUI")
-st.write(input_df)
-
 # ------------------------------------------------
 # ELM PREDICTION FUNCTION
 # ------------------------------------------------
@@ -158,7 +154,10 @@ if st.button("Predict Compressive Strength"):
         "Age"
 
     ])
-
+    
+    st.write("INPUT VALUES FROM GUI")
+    st.write(input_df)
+    
     results = []
 
     for name, model in models.items():
