@@ -171,6 +171,16 @@ if st.button("Predict Compressive Strength"):
     st.subheader("Model Predictions")
     st.dataframe(results_df)
 
-    best_row = results_df.loc[results_df["Predicted Strength (MPa)"].idxmax()]
+    model_r2 = {
+    "ELM_CMAES": 0.95,
+    "ELM_DE": 0.85,
+    "ELM_GWO": 0.88,
+    "ELM_PSO": 0.91,
+    "ELM_WOA": 0.89
+    }
+
+best_model = max(model_r2, key=model_r2.get)
+
+st.success(f"Best Model (Based on R²): {best_model}")
 
     st.success(f"Best Model: {best_row['Model']} | Strength = {best_row['Predicted Strength (MPa)']} MPa")
