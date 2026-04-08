@@ -169,16 +169,17 @@ if st.button("Predict Compressive Strength"):
     results_df = pd.DataFrame(results, columns=["Model", "Predicted Strength (MPa)"])
 
     st.subheader("Model Predictions")
-    st.dataframe(results_df)
+st.dataframe(results_df)
 
-    model_r2 = {
+# Model R2 values
+model_r2 = {
     "ELM_CMAES": 0.95,
-    "ELM_DE": 0.85,
     "ELM_GWO": 0.88,
     "ELM_PSO": 0.91,
     "ELM_WOA": 0.89
-    }
+}
 
+# Best model based on R²
 best_model = max(model_r2, key=model_r2.get)
 
 st.success(f"Best Model (Based on R²): {best_model}")
