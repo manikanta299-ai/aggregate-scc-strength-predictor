@@ -8,7 +8,7 @@ st.set_page_config(page_title="SCC Strength Predictor (ELM)", layout="wide")
 st.title("AI-Based SCC Compressive Strength Prediction (ELM Models)")
 
 # ------------------------------------------------
-# MATERIAL MAPPING (CODE → NAME)
+# MATERIAL MAPPING
 # ------------------------------------------------
 
 material_map = {
@@ -23,8 +23,6 @@ material_map = {
 }
 
 material_names = list(material_map.values())
-
-# Reverse mapping
 material_reverse = {v: k for k, v in material_map.items()}
 
 # ------------------------------------------------
@@ -53,54 +51,58 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     material = st.selectbox("Material Type", material_names)
-    replacement = st.number_input("% Replacement", value=20.0)
+    replacement = st.number_input("% Replacement", value=10.0)
     binder = st.number_input("Binder (kg/m³)", value=400.0)
 
 with col2:
-    wb = st.number_input("Water/Binder Ratio", value=0.40)
-    fine_agg = st.number_input("Fine Aggregate", value=700.0)
-    coarse_agg = st.number_input("Coarse Aggregate", value=1000.0)
+    wb = st.number_input("Water/Binder Ratio", value=0.55)
+    fine_agg = st.number_input("Fine Aggregate", value=829.6)
+    coarse_agg = st.number_input("Coarse Aggregate", value=656.0)
 
 with col3:
-    sp = st.number_input("Superplasticizer (%)", value=1.5)
-    sio2 = st.number_input("SiO2 (%)", value=60.0)
-    cao = st.number_input("CaO (%)", value=10.0)
+    sp = st.number_input("Superplasticizer (%)", value=1.05)
+    sio2 = st.number_input("SiO2 (%)", value=30.2)
+    cao = st.number_input("CaO (%)", value=39.5)
 
 col4, col5, col6 = st.columns(3)
 
 with col4:
-    al2o3 = st.number_input("Al2O3 (%)", value=5.0)
-    fe2o3 = st.number_input("Fe2O3 (%)", value=3.0)
+    al2o3 = st.number_input("Al2O3 (%)", value=3.0)
+    fe2o3 = st.number_input("Fe2O3 (%)", value=31.8)
 
 with col5:
-    sg = st.number_input("Material Specific Gravity", value=2.6)
-    wa = st.number_input("Water Absorption (%)", value=2.0)
+    sg = st.number_input("Material Specific Gravity", value=2.45)
+    wa = st.number_input("Water Absorption (%)", value=8.0)
 
 with col6:
-    fm = st.number_input("Fineness Modulus", value=2.8)
-    slump = st.number_input("Slump (mm)", value=650.0)
+    fm = st.number_input("Fineness Modulus", value=3.11)
+    slump = st.number_input("Slump (mm)", value=705.0)
 
 col7, col8 = st.columns(2)
 
 with col7:
-    t500 = st.number_input("T500 (sec)", value=4.0)
+    t500 = st.number_input("T500 (sec)", value=3.4)
 
 with col8:
-    age = st.number_input("Age (days)", value=28)
+    age = st.number_input("Age (days)", value=7)
 
-# Encode material
 material_code = material_reverse[material]
+
 # ------------------------------------------------
-# ELM PREDICTION FUNCTION
+# ELM PREDICTION FUNCTION (FIXED)
 # ------------------------------------------------
 
-def elm_predict(X, model_dict):
+def elm_predict(X_df, model_dict):
 
     W = model_dict["W"]
     b = model_dict["b"]
     beta = model_dict["beta"]
     scaler = model_dict["scaler"]
 
+    # Ensure correct shape
+    X = np.array(X_df).reshape(1, -1)
+
+    # Apply SAME scaler
     X_scaled = scaler.transform(X)
 
     H = 1 / (1 + np.exp(-(X_scaled @ W + b)))
@@ -136,7 +138,7 @@ if st.button("Predict Compressive Strength"):
     ]], columns=[
 
         "Material_Name",
-        "%Replacement",
+        "%Replace",
         "Binder",
         "w/b",
         "Fine_Agg",
@@ -152,27 +154,21 @@ if st.button("Predict Compressive Strength"):
         "Slump",
         "T50",
         "Age"
-
     ])
-    
-    st.write("INPUT VALUES FROM GUI")
+
+    # 🔹 DEBUG (optional)
+    st.write("Input Used for Prediction")
     st.write(input_df)
-    
+
     results = []
 
     for name, model in models.items():
-
         pred = elm_predict(input_df, model)[0]
-
         results.append([name, round(pred, 2)])
 
-    results_df = pd.DataFrame(
-        results,
-        columns=["Model", "Predicted Strength (MPa)"]
-    )
+    results_df = pd.DataFrame(results, columns=["Model", "Predicted Strength (MPa)"])
 
     st.subheader("Model Predictions")
-
     st.dataframe(results_df)
 
     best_row = results_df.loc[results_df["Predicted Strength (MPa)"].idxmax()]
