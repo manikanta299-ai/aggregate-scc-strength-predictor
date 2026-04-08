@@ -2,16 +2,19 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="SCC Strength Predictor", layout="wide")
 
-st.title("AI-Based SCC Compressive Strength Prediction")
-st.markdown("### Using Optimized ELM-CMAES Model")
+# -------------------------------
+# TITLE
+# -------------------------------
+st.title("AI-Based aggregate SCC Compressive Strength Prediction")
+st.markdown("### Optimized ELM-CMAES Model (Best Performing Model)")
 
-# ------------------------------------------------
-# MATERIALS (FCS REMOVED)
-# ------------------------------------------------
-
+# -------------------------------
+# MATERIAL MAP (FCS REMOVED)
+# -------------------------------
 material_map = {
     0: "Blast Furnace Slag (BFS)",
     1: "Coal Bottom Ash (CBA)",
@@ -25,16 +28,14 @@ material_map = {
 material_names = list(material_map.values())
 material_reverse = {v: k for k, v in material_map.items()}
 
-# ------------------------------------------------
-# LOAD BEST MODEL ONLY
-# ------------------------------------------------
-
+# -------------------------------
+# LOAD MODEL
+# -------------------------------
 model = joblib.load("ELM_CMAES.pkl")
 
-# ------------------------------------------------
+# -------------------------------
 # ELM FUNCTION
-# ------------------------------------------------
-
+# -------------------------------
 def elm_predict(X_df, model_dict):
     W = model_dict["W"]
     b = model_dict["b"]
@@ -48,66 +49,46 @@ def elm_predict(X_df, model_dict):
 
     return H @ beta
 
-# ------------------------------------------------
-# INPUT SECTION
-# ------------------------------------------------
+# -------------------------------
+# INPUT UI
+# -------------------------------
+st.subheader("🔧 Input Parameters")
 
-st.subheader("Input Parameters")
-
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
     material = st.selectbox("Material Type", material_names)
     replacement = st.slider("% Replacement", 0.0, 100.0, 10.0)
-
-with col2:
     binder = st.number_input("Binder (kg/m³)", value=400.0)
     wb = st.number_input("Water/Binder Ratio", value=0.55)
-
-with col3:
     fine_agg = st.number_input("Fine Aggregate", value=829.6)
     coarse_agg = st.number_input("Coarse Aggregate", value=656.0)
 
-col4, col5, col6 = st.columns(3)
-
-with col4:
+with col2:
     sp = st.number_input("Superplasticizer (%)", value=1.05)
     sio2 = st.number_input("SiO2 (%)", value=30.2)
-
-with col5:
     cao = st.number_input("CaO (%)", value=39.5)
     al2o3 = st.number_input("Al2O3 (%)", value=3.0)
-
-with col6:
     fe2o3 = st.number_input("Fe2O3 (%)", value=31.8)
     sg = st.number_input("Material Specific Gravity", value=2.45)
 
-col7, col8, col9 = st.columns(3)
+col3, col4 = st.columns(2)
 
-with col7:
+with col3:
     wa = st.number_input("Water Absorption (%)", value=8.0)
-
-with col8:
     fm = st.number_input("Fineness Modulus", value=3.11)
-
-with col9:
     slump = st.number_input("Slump (mm)", value=705.0)
 
-col10, col11 = st.columns(2)
-
-with col10:
+with col4:
     t500 = st.number_input("T500 (sec)", value=3.4)
-
-with col11:
     age = st.number_input("Age (days)", value=7)
 
 material_code = material_reverse[material]
 
-# ------------------------------------------------
+# -------------------------------
 # PREDICTION
-# ------------------------------------------------
-
-if st.button("Predict Compressive Strength"):
+# -------------------------------
+if st.button("🚀 Predict Compressive Strength"):
 
     input_df = pd.DataFrame([[
         material_code,
@@ -128,65 +109,92 @@ if st.button("Predict Compressive Strength"):
         t500,
         age
     ]], columns=[
-        "Material_Name",
-        "%Replace",
-        "Binder",
-        "w/b",
-        "Fine_Agg",
-        "Coarse_Agg",
-        "SP",
-        "SiO2",
-        "CaO",
-        "Al2O3",
-        "Fe2O3",
-        "Material_SG",
-        "Material_WA",
-        "Material_FM",
-        "Slump",
-        "T50",
-        "Age"
+        "Material_Name", "%Replace", "Binder", "w/b",
+        "Fine_Agg", "Coarse_Agg", "SP",
+        "SiO2", "CaO", "Al2O3", "Fe2O3",
+        "Material_SG", "Material_WA", "Material_FM",
+        "Slump", "T50", "Age"
     ])
 
     prediction = elm_predict(input_df, model)[0]
 
-    # ------------------------------------------------
-    # OUTPUT SECTION
-    # ------------------------------------------------
+    # -------------------------------
+    # RESULT DISPLAY
+    # -------------------------------
+    st.subheader("📊 Prediction Result")
 
-    st.subheader("Prediction Result")
+    st.success(f"Predicted Strength: {prediction:.2f} MPa")
 
-    st.success(f"Predicted Compressive Strength: {prediction:.2f} MPa")
-
-    # Interpretation
     if prediction < 30:
-        st.warning("Low Strength Mix")
+        st.error("LOW STRENGTH MIX")
     elif prediction < 60:
-        st.info("Moderate Strength Mix")
+        st.warning("MODERATE STRENGTH MIX")
     else:
-        st.success("High Strength SCC")
+        st.success("HIGH STRENGTH SCC")
 
-    # ------------------------------------------------
+    # -------------------------------
     # INPUT SUMMARY
-    # ------------------------------------------------
-
-    with st.expander("View Input Summary"):
+    # -------------------------------
+    with st.expander("📄 View Input Summary"):
         st.dataframe(input_df)
 
-    # ------------------------------------------------
-    # OPTIONAL VALIDATION
-    # ------------------------------------------------
+    # -------------------------------
+    # SENSITIVITY ANALYSIS
+    # -------------------------------
+    st.subheader("📈 Replacement Sensitivity")
 
-    actual = st.number_input("Enter Actual Strength (Optional)", value=0.0)
+    rep_range = np.linspace(0, 60, 30)
+    preds = []
+
+    for r in rep_range:
+        temp = input_df.copy()
+        temp["%Replace"] = r
+        preds.append(elm_predict(temp, model)[0])
+
+    fig1 = plt.figure()
+    plt.plot(rep_range, preds, linewidth=2)
+    plt.xlabel("Replacement (%)")
+    plt.ylabel("Strength (MPa)")
+    plt.title("Effect of Replacement")
+    plt.grid()
+    st.pyplot(fig1)
+
+    # -------------------------------
+    # FEATURE IMPACT
+    # -------------------------------
+    st.subheader("📊 Feature Influence")
+
+    features = input_df.columns
+    base_pred = prediction
+    impacts = []
+
+    for col in features:
+        temp = input_df.copy()
+        temp[col] = temp[col] * 1.05
+        impacts.append(elm_predict(temp, model)[0] - base_pred)
+
+    fig2 = plt.figure()
+    plt.barh(features, impacts)
+    plt.xlabel("Impact on Strength")
+    plt.title("Feature Sensitivity (+5%)")
+    plt.grid()
+    st.pyplot(fig2)
+
+    # -------------------------------
+    # OPTIONAL VALIDATION
+    # -------------------------------
+    st.subheader("🎯 Validation (Optional)")
+
+    actual = st.number_input("Enter Actual Strength", value=0.0)
 
     if actual > 0:
         error = abs(prediction - actual)
 
-        st.subheader("Prediction Error")
-        st.write(f"Absolute Error: {error:.2f} MPa")
+        st.write(f"Error: {error:.2f} MPa")
 
         if error < 2:
-            st.success("Excellent Prediction Accuracy")
+            st.success("Excellent Prediction")
         elif error < 5:
             st.info("Good Prediction")
         else:
-            st.warning("Prediction deviation is high")
+            st.warning("High Deviation")
