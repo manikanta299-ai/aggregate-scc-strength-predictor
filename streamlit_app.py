@@ -37,7 +37,6 @@ model_files = {
 }
 
 models = {}
-
 for name, path in model_files.items():
     models[name] = joblib.load(path)
 
@@ -51,7 +50,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     material = st.selectbox("Material Type", material_names)
-    replacement = st.number_input("% Replacement", value=10.0)
+    replacement = st.number_input("% Replace", value=10.0)
     binder = st.number_input("Binder (kg/m³)", value=400.0)
 
 with col2:
@@ -89,20 +88,16 @@ with col8:
 material_code = material_reverse[material]
 
 # ------------------------------------------------
-# ELM PREDICTION FUNCTION (FIXED)
+# ELM PREDICTION FUNCTION
 # ------------------------------------------------
 
 def elm_predict(X_df, model_dict):
-
     W = model_dict["W"]
     b = model_dict["b"]
     beta = model_dict["beta"]
     scaler = model_dict["scaler"]
 
-    # Ensure correct shape
     X = np.array(X_df).reshape(1, -1)
-
-    # Apply SAME scaler
     X_scaled = scaler.transform(X)
 
     H = 1 / (1 + np.exp(-(X_scaled @ W + b)))
@@ -116,7 +111,6 @@ def elm_predict(X_df, model_dict):
 if st.button("Predict Compressive Strength"):
 
     input_df = pd.DataFrame([[
-
         material_code,
         replacement,
         binder,
@@ -134,11 +128,9 @@ if st.button("Predict Compressive Strength"):
         slump,
         t500,
         age
-
     ]], columns=[
-
         "Material_Name",
-        "%Replacement",
+        "%Replace",
         "Binder",
         "w/b",
         "Fine_Agg",
@@ -156,7 +148,7 @@ if st.button("Predict Compressive Strength"):
         "Age"
     ])
 
-    # 🔹 DEBUG (optional)
+    # Debug (optional)
     st.write("Input Used for Prediction")
     st.write(input_df)
 
@@ -169,19 +161,19 @@ if st.button("Predict Compressive Strength"):
     results_df = pd.DataFrame(results, columns=["Model", "Predicted Strength (MPa)"])
 
     st.subheader("Model Predictions")
-st.dataframe(results_df)
+    st.dataframe(results_df)
 
-# Model R2 values
-model_r2 = {
-    "ELM_CMAES": 0.95,
-    "ELM_GWO": 0.88,
-    "ELM_PSO": 0.91,
-    "ELM_WOA": 0.89
-}
+    # ------------------------------------------------
+    # MODEL PERFORMANCE (R² BASED)
+    # ------------------------------------------------
 
-# Best model based on R²
-best_model = max(model_r2, key=model_r2.get)
+    model_r2 = {
+        "ELM_CMAES": 0.95,
+        "ELM_GWO": 0.88,
+        "ELM_PSO": 0.91,
+        "ELM_WOA": 0.89
+    }
 
-st.success(f"Best Model (Based on R²): {best_model}")
+    best_model = max(model_r2, key=model_r2.get)
 
-    st.success(f"Best Model: {best_row['Model']} | Strength = {best_row['Predicted Strength (MPa)']} MPa")
+    st.success(f"Best Model (Based on R²): {best_model}")
