@@ -91,6 +91,9 @@ with col8:
 # Encode material
 material_code = material_reverse[material]
 
+st.write("INPUT VALUES FROM GUI")
+st.write(input_df)
+
 # ------------------------------------------------
 # ELM PREDICTION FUNCTION
 # ------------------------------------------------
