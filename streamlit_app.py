@@ -6,15 +6,93 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="SCC Strength Predictor", layout="wide")
 
-# -------------------------------
-# TITLE
-# -------------------------------
-st.title("AI-Based SCC Compressive Strength Prediction")
-st.markdown("### Optimized ELM-CMAES Model (Best Performing Model)")
+# ------------------------------------------------
+# 🔥 PREMIUM UI CSS
+# ------------------------------------------------
+st.markdown("""
+<style>
 
-# -------------------------------
-# MATERIAL MAP (FCS REMOVED)
-# -------------------------------
+/* Global font */
+html, body, [class*="css"] {
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Reduce spacing */
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 0rem;
+}
+
+/* Card layout */
+.card {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+}
+
+/* Section title */
+.section-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Input labels */
+label {
+    font-size: 17px !important;
+    font-weight: 600 !important;
+}
+
+/* Inputs */
+input, .stNumberInput input {
+    font-size: 17px !important;
+}
+
+/* Selectbox */
+div[data-baseweb="select"] > div {
+    font-size: 17px !important;
+}
+
+/* KPI box */
+.kpi {
+    background-color: #e8f5e9;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: #1b5e20;
+}
+
+/* Sticky header */
+header {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 999;
+}
+
+/* Button */
+.stButton button {
+    font-size: 18px;
+    padding: 10px 25px;
+    border-radius: 8px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ------------------------------------------------
+# TITLE
+# ------------------------------------------------
+st.title("AI-Based SCC Compressive Strength Prediction")
+st.markdown("### Optimized ELM-CMAES Model")
+
+# ------------------------------------------------
+# MATERIAL MAP (NO FCS)
+# ------------------------------------------------
 material_map = {
     0: "Blast Furnace Slag (BFS)",
     1: "Coal Bottom Ash (CBA)",
@@ -28,14 +106,14 @@ material_map = {
 material_names = list(material_map.values())
 material_reverse = {v: k for k, v in material_map.items()}
 
-# -------------------------------
+# ------------------------------------------------
 # LOAD MODEL
-# -------------------------------
+# ------------------------------------------------
 model = joblib.load("ELM_CMAES.pkl")
 
-# -------------------------------
+# ------------------------------------------------
 # ELM FUNCTION
-# -------------------------------
+# ------------------------------------------------
 def elm_predict(X_df, model_dict):
     W = model_dict["W"]
     b = model_dict["b"]
@@ -44,15 +122,14 @@ def elm_predict(X_df, model_dict):
 
     X = np.array(X_df).reshape(1, -1)
     X_scaled = scaler.transform(X)
-
     H = 1 / (1 + np.exp(-(X_scaled @ W + b)))
 
     return H @ beta
 
-# -------------------------------
-# INPUT UI
-# -------------------------------
-st.subheader("🔧 Input Parameters")
+# ------------------------------------------------
+# INPUT SECTION (CARD STYLE)
+# ------------------------------------------------
+st.markdown('<div class="section-title">🔧 Input Parameters</div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -85,29 +162,16 @@ with col4:
 
 material_code = material_reverse[material]
 
-# -------------------------------
-# PREDICTION
-# -------------------------------
+# ------------------------------------------------
+# PREDICTION BUTTON
+# ------------------------------------------------
 if st.button("🚀 Predict Compressive Strength"):
 
     input_df = pd.DataFrame([[
-        material_code,
-        replacement,
-        binder,
-        wb,
-        fine_agg,
-        coarse_agg,
-        sp,
-        sio2,
-        cao,
-        al2o3,
-        fe2o3,
-        sg,
-        wa,
-        fm,
-        slump,
-        t500,
-        age
+        material_code, replacement, binder, wb,
+        fine_agg, coarse_agg, sp,
+        sio2, cao, al2o3, fe2o3,
+        sg, wa, fm, slump, t500, age
     ]], columns=[
         "Material_Name", "%Replace", "Binder", "w/b",
         "Fine_Agg", "Coarse_Agg", "SP",
@@ -118,29 +182,24 @@ if st.button("🚀 Predict Compressive Strength"):
 
     prediction = elm_predict(input_df, model)[0]
 
-    # -------------------------------
-    # RESULT DISPLAY
-    # -------------------------------
-    st.subheader("📊 Prediction Result")
+    # ------------------------------------------------
+    # KPI OUTPUT
+    # ------------------------------------------------
+    st.markdown('<div class="section-title">📊 Prediction Result</div>', unsafe_allow_html=True)
 
-    st.success(f"Predicted Strength: {prediction:.2f} MPa")
+    st.markdown(f'<div class="kpi">{prediction:.2f} MPa</div>', unsafe_allow_html=True)
 
+    # Strength category
     if prediction < 30:
-        st.error("LOW STRENGTH MIX")
+        st.error("Low Strength Mix")
     elif prediction < 60:
-        st.warning("MODERATE STRENGTH MIX")
+        st.warning("Moderate Strength Mix")
     else:
-        st.success("HIGH STRENGTH SCC")
+        st.success("High Strength SCC")
 
-    # -------------------------------
-    # INPUT SUMMARY
-    # -------------------------------
-    with st.expander("📄 View Input Summary"):
-        st.dataframe(input_df)
-
-    # -------------------------------
-    # SENSITIVITY ANALYSIS
-    # -------------------------------
+    # ------------------------------------------------
+    # SENSITIVITY PLOT
+    # ------------------------------------------------
     st.subheader("📈 Replacement Sensitivity")
 
     rep_range = np.linspace(0, 60, 30)
@@ -152,44 +211,43 @@ if st.button("🚀 Predict Compressive Strength"):
         preds.append(elm_predict(temp, model)[0])
 
     fig1 = plt.figure()
-    plt.plot(rep_range, preds, linewidth=2)
+    plt.plot(rep_range, preds)
     plt.xlabel("Replacement (%)")
     plt.ylabel("Strength (MPa)")
-    plt.title("Effect of Replacement")
     plt.grid()
     st.pyplot(fig1)
 
-    # -------------------------------
+    # ------------------------------------------------
     # FEATURE IMPACT
-    # -------------------------------
+    # ------------------------------------------------
     st.subheader("📊 Feature Influence")
 
-    features = input_df.columns
-    base_pred = prediction
     impacts = []
-
-    for col in features:
+    for col in input_df.columns:
         temp = input_df.copy()
-        temp[col] = temp[col] * 1.05
-        impacts.append(elm_predict(temp, model)[0] - base_pred)
+        temp[col] *= 1.05
+        impacts.append(elm_predict(temp, model)[0] - prediction)
 
     fig2 = plt.figure()
-    plt.barh(features, impacts)
-    plt.xlabel("Impact on Strength")
-    plt.title("Feature Sensitivity (+5%)")
+    plt.barh(input_df.columns, impacts)
     plt.grid()
     st.pyplot(fig2)
 
-    # -------------------------------
-    # OPTIONAL VALIDATION
-    # -------------------------------
-    st.subheader("🎯 Validation (Optional)")
+    # ------------------------------------------------
+    # INPUT SUMMARY
+    # ------------------------------------------------
+    with st.expander("📄 View Input Summary"):
+        st.dataframe(input_df)
 
-    actual = st.number_input("Enter Actual Strength", value=0.0)
+    # ------------------------------------------------
+    # VALIDATION
+    # ------------------------------------------------
+    st.subheader("🎯 Validation")
+
+    actual = st.number_input("Actual Strength", value=0.0)
 
     if actual > 0:
         error = abs(prediction - actual)
-
         st.write(f"Error: {error:.2f} MPa")
 
         if error < 2:
