@@ -9,7 +9,7 @@ st.set_page_config(page_title="SCC Strength Predictor", layout="wide")
 # -------------------------------
 # TITLE
 # -------------------------------
-st.title("AI-Based aggregate SCC Compressive Strength Prediction")
+st.title("AI-Based SCC Compressive Strength Prediction")
 st.markdown("### Optimized ELM-CMAES Model (Best Performing Model)")
 
 # -------------------------------
