@@ -138,7 +138,7 @@ if st.button("Predict Compressive Strength"):
     ]], columns=[
 
         "Material_Name",
-        "%Replace",
+        "%Replacement",
         "Binder",
         "w/b",
         "Fine_Agg",
